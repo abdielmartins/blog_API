@@ -33,7 +33,7 @@ def list_users():
     username_filter = request.args.get("name")
     if username_filter:
         list_of_users = (
-            UserModel.query.filter(UserModel.nickname.like(f"%{username_filter}%")).order_by(UserModel.nickname).all()
+            UserModel.query.filter(UserModel.nickname.like(f"{username_filter}")).order_by(UserModel.nickname).all()
         )
     else:
         list_of_users = UserModel.query.all()
@@ -51,3 +51,28 @@ def get_user(user_id):
         return {"message": "User not found"}, HTTPStatus.NOT_FOUND
 
     return {"user": {"id": found_user.id, "nickname": found_user.nickname, "email": found_user.email}}, HTTPStatus.OK
+
+
+@bp_user.route("/<int:user_id>", methods=["PATCH", "PUT"])
+def update_user(user_id):
+    try:
+        session = current_app.db.session
+
+        body = request.get_json()
+
+        email = body["email"]
+        nickname = body["nickname"]
+
+        found_user: UserModel = UserModel.query.get(user_id)
+        found_user.email = email
+        found_user.nickname = nickname
+
+        session.add(found_user)
+        session.commit()
+
+        return {
+            "user": {"id": found_user.id, "nickname": found_user.nickname, "email": found_user.email}
+        }, HTTPStatus.OK
+
+    except KeyError:
+        return {"message": "Verify the request body"}, HTTPStatus.BAD_REQUEST
