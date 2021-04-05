@@ -10,6 +10,9 @@ class UserModel(db.Model):
     email = db.Column(db.String, nullable=False, unique=True)
     password_hash = db.Column(db.String, nullable=True)
 
+    profile_id = db.Column(db.Integer, db.ForeignKey("profiles.id"))
+    profile = db.relationship("ProfileModel", uselist=False, lazy="joined", backref=db.backref("user", lazy="joined"))
+
     @property
     def password(self):
         raise TypeError("A senha não pode ser acessada")
