@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from flask import Blueprint, request, current_app
 from http import HTTPStatus
 
@@ -30,14 +31,27 @@ def create_post(user_id):
 
 @bp_post.route("/list/<int:user_id>", methods=["GET"])
 def list_user_posts(user_id):
-    found_user = UserModel.query.get(user_id)
+    session = current_app.db.session
 
-    if not found_user:
-        return {"message": "User not found"}, HTTPStatus.NOT_FOUND
+    page = int(request.args.get("page"))
+    per_page = int(request.args.get("per_page"))
 
-    user_posts = found_user.post_list
+    posts_list: List[PostModel] = (
+        session.query(PostModel)
+        .join(UserModel)
+        .filter(UserModel.id == user_id)
+        .paginate(page=page, per_page=per_page, error_out=False)
+        .items
+    )
 
-    return {"posts": [{"title": post.title, "content": post.content} for post in user_posts]}, HTTPStatus.OK
+    print(posts_list.__dict__)
+
+    return {
+        "posts": [
+            {"id": post.id, "nickname": user.nickname, "title": post.title, "content": post.content}
+            for post, user in posts_list
+        ]
+    }, HTTPStatus.OK
 
 
 @bp_post.route("/delete/<int:post_id>", methods=["DELETE"])
